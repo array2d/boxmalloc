@@ -38,7 +38,7 @@ int main() {
     int alloc_count = 0;
     while (1) {
         uint64_t obj_offset = box_alloc(buddy,  SMALL_OBJ_SIZE);
-        if (obj_offset == UINT64_MAX-1) {
+        if (obj_offset == (uint64_t)-1) {
             break;  // 分配失败，box已满
         }
         if (alloc_count >= capacity) {
@@ -74,7 +74,7 @@ int main() {
 
         // 立即 Malloc 一个新的小对象
         uint64_t new_offset = box_alloc(buddy, SMALL_OBJ_SIZE);
-        if (new_offset == UINT64_MAX-1) {
+        if (new_offset == (uint64_t)-1) {
             printf("Re-allocation failed at loop %lld\n", loop_count);
             break;  // 如果分配失败，退出循环
         }

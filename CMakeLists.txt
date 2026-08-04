@@ -54,7 +54,7 @@ endif()
 
 target_link_libraries(boxmalloc PRIVATE blockmalloc)
 
-add_subdirectory(test)
+add_subdirectory(tutorial)
 
 # 将安装/打包相关配置委托到 cmake/packagex.cmake 以便复用和打包脚本共享
 include("${CMAKE_CURRENT_LIST_DIR}/cmake/packagex.cmake")
