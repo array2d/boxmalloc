@@ -5,11 +5,11 @@
 #include <string.h>
 #include <stdint.h>
 #include <time.h>
-#include <slotsboxmalloc/slotsboxmalloc.h>
+#include <slotsboxmalloc/slotsboxobj.h>
 
 #define OPS 200000
 #define META_SIZE (1024 * 1024)
-#define DATA_SIZE (15ULL * 8 * 1024 * 1024)
+#define DATA_SIZE (8ULL * 64 * 64 * 64 * 64)
 static const size_t k4[] = {8, 64, 512, 4096};
 
 typedef struct { uint8_t *meta; int sz_idx; } arg_t;
@@ -20,8 +20,8 @@ void* bench_1size(void *a) {
     long n = 0;
     size_t sz = k4[aa->sz_idx];
     for (int i = 0; i < OPS; i++) {
-        uint64_t off = box_alloc(aa->meta, sz);
-        if (off != (uint64_t)-1) { box_free(aa->meta, off); n++; }
+        uint64_t off = sbo_alloc(aa->meta, sz);
+        if (off != (uint64_t)-1) { sbo_free(aa->meta, off); n++; }
     }
     total += n; return NULL;
 }
@@ -31,8 +31,8 @@ void* bench_4size(void *a) {
     long n = 0;
     for (int i = 0; i < OPS; i++) {
         size_t sz = k4[i & 3];
-        uint64_t off = box_alloc(meta, sz);
-        if (off != (uint64_t)-1) { box_free(meta, off); n++; }
+        uint64_t off = sbo_alloc(meta, sz);
+        if (off != (uint64_t)-1) { sbo_free(meta, off); n++; }
     }
     total += n; return NULL;
 }
@@ -54,7 +54,7 @@ int main() {
     uint8_t *mem = malloc(META_SIZE + DATA_SIZE);
     for (int si = 0; si <= 3; si++) {
         memset(mem, 0, META_SIZE);
-        box_init(mem, META_SIZE, DATA_SIZE);
+        sbo_init(mem, META_SIZE, DATA_SIZE);
         arg_t a = {mem, si};
         char buf[32]; snprintf(buf, sizeof(buf), "1size(%zuB)", k4[si]);
         for (int n = 1; n <= 8; n *= 2)
@@ -62,7 +62,7 @@ int main() {
     }
     // 4size
     memset(mem, 0, META_SIZE);
-    box_init(mem, META_SIZE, DATA_SIZE);
+    sbo_init(mem, META_SIZE, DATA_SIZE);
     for (int n = 1; n <= 8; n *= 2)
         run("4size(8-4096B)", bench_4size, mem, n);
     free(mem);

@@ -5,7 +5,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <time.h>
-#include <slotsboxmalloc/slotsboxmalloc.h>
+#include <slotsboxmalloc/slotsboxobj.h>
 
 // 8*16^1*15 = 1920 bytes → root level=1, avliable_slot=15, depth=2
 // Minimal 2-level tree for maximum cache locality
@@ -19,8 +19,8 @@ void* worker(void *arg) {
     uint8_t *meta = (uint8_t *)arg;
     long n = 0;
     for (int i = 0; i < OPS; i++) {
-        uint64_t off = box_alloc(meta, 8);
-        if (off != (uint64_t)-1) { box_free(meta, off); n++; }
+        uint64_t off = sbo_alloc(meta, 8);
+        if (off != (uint64_t)-1) { sbo_free(meta, off); n++; }
     }
     total += n; return NULL;
 }
@@ -32,7 +32,7 @@ int main(int argc, char **argv) {
 
     uint8_t *mem = malloc(META_SIZE + DATA_SIZE);
     memset(mem, 0, META_SIZE);
-    box_init(mem, META_SIZE, DATA_SIZE);
+    sbo_init(mem, META_SIZE, DATA_SIZE);
 
     struct timespec t0, t1;
     pthread_t *tids = malloc(n * sizeof(pthread_t));

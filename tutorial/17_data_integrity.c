@@ -2,10 +2,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <slotsboxmalloc/slotsboxmalloc.h>
+#include <slotsboxmalloc/slotsboxobj.h>
 
-#define META_SIZE (4 * 1024 * 1024)
-#define DATA_SIZE (15ULL * 8 * 1024 * 1024)
+#define META_SIZE (16 * 1024 * 1024)
+#define DATA_SIZE (8ULL * 64 * 64 * 64 * 64)
 #define MAX_LIVE 512
 
 static void wr64(uint8_t *base, uint64_t off, uint64_t val) {
@@ -27,7 +27,7 @@ int main() {
     uint8_t *meta = malloc(META_SIZE);
     uint8_t *data = malloc(DATA_SIZE);
     memset(meta, 0, META_SIZE);
-    if (box_init(meta, META_SIZE, DATA_SIZE) != 0) {
+    if (sbo_init(meta, META_SIZE, DATA_SIZE) != 0) {
         printf("FAIL: init\n"); return 1;
     }
 
@@ -65,7 +65,7 @@ int main() {
                 }
             }
 
-            box_free(meta, live[idx].off);
+            sbo_free(meta, live[idx].off);
             live[idx] = live[--nlive];
         }
 
@@ -73,7 +73,7 @@ int main() {
         int n_to_alloc = (round % 3) + 1;
         for (int a = 0; a < n_to_alloc && nlive < MAX_LIVE; a++) {
             size_t req_sz = sizes[(round * 3 + a * 7) % ns];
-            uint64_t off = box_alloc(meta, req_sz);
+            uint64_t off = sbo_alloc(meta, req_sz);
             if (off == (uint64_t)-1) {
                 if (nlive > MAX_LIVE / 2) continue;
                 printf("FAIL: [r%d] alloc(%zu)=\n", round, req_sz);
@@ -81,7 +81,7 @@ int main() {
             }
             n_allocs++;
 
-            uint64_t alloc_sz = box_allocated_size(meta, off);
+            uint64_t alloc_sz = sbo_allocated_size(meta, off);
             if (alloc_sz < req_sz) {
                 printf("FAIL: [r%d] allocated_size=%lu < req=%zu\n", round, alloc_sz, req_sz);
                 return 1;
@@ -137,7 +137,7 @@ int main() {
             printf("FAIL: final[%d] off=%lu\n", i, live[i].off);
             return 1;
         }
-        box_free(meta, live[i].off);
+        sbo_free(meta, live[i].off);
     }
 
     free(meta); free(data);

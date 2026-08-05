@@ -5,11 +5,11 @@
 #include <string.h>
 #include <stdint.h>
 #include <time.h>
-#include <slotsboxmalloc/slotsboxmalloc.h>
+#include <slotsboxmalloc/slotsboxobj.h>
 
 #define OPS 200000
 #define META_SIZE (1024 * 1024)
-#define DATA_SIZE (15ULL * 8 * 1024 * 1024)
+#define DATA_SIZE (8ULL * 64 * 64 * 64 * 64)
 static const size_t kSz[] = {8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096};
 
 static _Atomic long total = 0;
@@ -31,8 +31,8 @@ void* bench_box(void *arg) {
     long n = 0;
     for (int i = 0; i < OPS; i++) {
         size_t sz = kSz[i % 10];
-        uint64_t off = box_alloc(meta, sz);
-        if (off != (uint64_t)-1) { box_free(meta, off); n++; }
+        uint64_t off = sbo_alloc(meta, sz);
+        if (off != (uint64_t)-1) { sbo_free(meta, off); n++; }
     }
     total += n; return NULL;
 }
@@ -55,7 +55,7 @@ int main() {
     // box init
     uint8_t *mem = malloc(META_SIZE + DATA_SIZE);
     memset(mem, 0, META_SIZE);
-    box_init(mem, META_SIZE, DATA_SIZE);
+    sbo_init(mem, META_SIZE, DATA_SIZE);
 
     printf("%-14s %6s %8s %8s %12s\n", "allocator", "thr", "ops", "time", "rate");
     printf("-------------- ------ -------- -------- ------------\n");

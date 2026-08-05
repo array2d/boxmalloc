@@ -5,7 +5,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <time.h>
-#include <slotsboxmalloc/slotsboxmalloc.h>
+#include <slotsboxmalloc/slotsboxobj.h>
 
 #define OPS 50000
 #define META_SIZE (256 * 1024)
@@ -17,9 +17,9 @@ void* worker(void *a) {
     uint8_t *meta = (uint8_t *)a;
     long ops = 0, tries = 0;
     for (int i = 0; i < OPS; i++) {
-        uint64_t off = box_alloc(meta, 8);
+        uint64_t off = sbo_alloc(meta, 8);
         if (off != (uint64_t)-1) {
-            box_free(meta, off);
+            sbo_free(meta, off);
             ops++;
         }
         tries++;
@@ -34,8 +34,8 @@ int main(int argc, char **argv) {
     const int n = (argc > 1) ? atoi(argv[1]) : 8;
     uint8_t *mem = malloc(META_SIZE + DATA_SIZE);
     memset(mem, 0, META_SIZE);
-    box_init(mem, META_SIZE, DATA_SIZE);
-    box_meta_t *meta = (box_meta_t *)mem;
+    sbo_init(mem, META_SIZE, DATA_SIZE);
+    sbo_meta_t *meta = (sbo_meta_t *)mem;
 
     struct timespec t0, t1;
     pthread_t *tids = malloc(n * sizeof(pthread_t));

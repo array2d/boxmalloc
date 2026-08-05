@@ -18,20 +18,9 @@ def discover(build_dir: Path) -> list[Path]:
 
 
 def build() -> bool:
-    out = ROOT / "build"
-    if not (out / "Makefile").exists():
-        out.mkdir(exist_ok=True)
-        r = subprocess.run(
-            ["cmake", "-DCMAKE_BUILD_TYPE=Release", ".."],
-            capture_output=True, text=True, timeout=60, cwd=str(out))
-        if r.returncode != 0:
-            print(f"{RED}❌ cmake failed:{NC}\n{r.stderr}")
-            return False
-    r = subprocess.run(
-        ["make", f"-j{os.cpu_count() or 1}"],
-        capture_output=True, text=True, timeout=120, cwd=str(out))
+    r = subprocess.run(["make"], capture_output=True, text=True, timeout=120, cwd=str(ROOT))
     if r.returncode != 0:
-        print(f"{RED}❌ make failed:{NC}\n{r.stderr}")
+        print(f"{RED}❌ build failed:{NC}\n{r.stderr}")
         return False
     return True
 
@@ -55,7 +44,6 @@ def _run_one(case: Path, label: str, timeout: int) -> dict:
 def main():
     ap = argparse.ArgumentParser(description="slotsboxmalloc tutorial test")
     ap.add_argument("--filter", default="", help="filter by case name")
-    ap.add_argument("--no-build", action="store_true", help="skip cmake + make")
     ap.add_argument("--errorexit", action="store_true", help="exit on first error")
     ap.add_argument("--repeat", type=int, default=1, help="repeat each case N times")
     ap.add_argument("--skip-stress", action="store_true", help="skip 03_stress (may run forever)")
@@ -65,10 +53,9 @@ def main():
 
     build_dir = ROOT / "build" / "tutorial"
 
-    if not args.no_build:
-        if not build():
-            sys.exit(1)
-        print(f"{GREEN}✅ build ok{NC}")
+    if not build():
+        sys.exit(1)
+    print(f"{GREEN}✅ build ok{NC}")
 
     cases = [c for c in discover(build_dir) if args.filter in c.name]
     if args.skip_stress:

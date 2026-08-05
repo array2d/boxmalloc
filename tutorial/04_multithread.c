@@ -3,12 +3,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
-#include <slotsboxmalloc/slotsboxmalloc.h>
+#include <slotsboxmalloc/slotsboxobj.h>
 
 #define NUM_THREADS 8
 #define OPS_PER_THREAD 500       // each op is alloc-or-free
 #define META_SIZE (1024 * 1024)  // 1MB meta
-#define DATA_SIZE (15ULL * 8 * 1024 * 1024)  // 120MB → 15 root slots
+#define DATA_SIZE (8ULL * 64 * 64 * 64 * 64)  // 120MB → 15 root slots
 
 static uint8_t *meta;
 static uint8_t *data;
@@ -24,11 +24,11 @@ void* thread_func(void *arg) {
     for (int i = 0; i < OPS_PER_THREAD; i++) {
         if (live_count >= 16 && (i & 1)) {
             int idx = (int)(((uint64_t)i * 1103515245 + 12345) % (uint64_t)live_count);
-            box_free(meta, live[idx]);
+            sbo_free(meta, live[idx]);
             live[idx] = live[--live_count];
         } else {
             size_t sz = kSizes[i % 8];
-            uint64_t off = box_alloc(meta, sz);
+            uint64_t off = sbo_alloc(meta, sz);
             if (off == (uint64_t)-1) {
                 printf("[WARN] thread %d alloc(%zu) failed at i=%d\n", tid, sz, i);
                 continue;
@@ -48,7 +48,7 @@ void* thread_func(void *arg) {
 
     // free remaining
     for (int i = 0; i < live_count; i++) {
-        box_free(meta, live[i]);
+        sbo_free(meta, live[i]);
     }
 
     return NULL;
@@ -60,7 +60,7 @@ int main() {
     memset(meta, 0, META_SIZE);
     memset(data, 0, DATA_SIZE);
 
-    if (box_init(meta, META_SIZE, DATA_SIZE) != 0) {
+    if (sbo_init(meta, META_SIZE, DATA_SIZE) != 0) {
         printf("[ERROR] box_init failed\n");
         return 1;
     }

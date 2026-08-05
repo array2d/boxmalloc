@@ -5,11 +5,11 @@
 #include <string.h>
 #include <stdint.h>
 #include <time.h>
-#include <slotsboxmalloc/slotsboxmalloc.h>
+#include <slotsboxmalloc/slotsboxobj.h>
 
 #define OPS_PER_THREAD 20000
 #define META_SIZE (1024 * 1024)
-#define DATA_SIZE (15ULL * 8 * 1024 * 1024)  // 120MB → 15 root slots
+#define DATA_SIZE (8ULL * 64 * 64 * 64 * 64)  // 120MB → 15 root slots
 static const size_t kSizes[] = {8, 16, 32, 64, 128, 256, 512, 1024};
 
 static uint8_t *meta, *data;
@@ -22,18 +22,18 @@ void* bench_thread(void *arg) {
     for (int i = 0; i < OPS_PER_THREAD; i++) {
         if (live_count >= 4 && (i & 1)) {
             int idx = (int)(((uint64_t)i * 1103515245 + 12345) % (uint64_t)live_count);
-            box_free(meta, live[idx]);
+            sbo_free(meta, live[idx]);
             live[idx] = live[--live_count];
         } else {
             size_t sz = kSizes[i & 7];
-            uint64_t off = box_alloc(meta, sz);
+            uint64_t off = sbo_alloc(meta, sz);
             if (off == (uint64_t)-1) continue;
             *(uint64_t*)(data + off) = (uint64_t)i;
             if (live_count < 8) live[live_count++] = off;
         }
         ops++;
     }
-    for (int i = 0; i < live_count; i++) box_free(meta, live[i]);
+    for (int i = 0; i < live_count; i++) sbo_free(meta, live[i]);
     total_ops += ops;
     return NULL;
 }
@@ -45,7 +45,7 @@ int main(int argc, char **argv) {
 
     meta = malloc(META_SIZE); data = malloc(DATA_SIZE);
     memset(meta, 0, META_SIZE); memset(data, 0, DATA_SIZE);
-    if (box_init(meta, META_SIZE, DATA_SIZE) != 0) { printf("init failed\n"); return 1; }
+    if (sbo_init(meta, META_SIZE, DATA_SIZE) != 0) { printf("init failed\n"); return 1; }
 
     struct timespec t0, t1;
     clock_gettime(CLOCK_MONOTONIC, &t0);

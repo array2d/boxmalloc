@@ -5,11 +5,11 @@
 #include <string.h>
 #include <stdint.h>
 #include <time.h>
-#include <slotsboxmalloc/slotsboxmalloc.h>
+#include <slotsboxmalloc/slotsboxobj.h>
 
 #define OPS_PER_THREAD 50000
 #define META_SIZE (1024 * 1024)
-#define DATA_SIZE (15ULL * 8 * 1024 * 1024)
+#define DATA_SIZE (8ULL * 64 * 64 * 64 * 64)
 static const size_t kSizes[] = {8, 64, 512, 4096};
 
 static uint8_t *meta, *data;
@@ -19,9 +19,9 @@ void* bench_thread(void *arg) {
     long ops = 0;
     for (int i = 0; i < OPS_PER_THREAD; i++) {
         size_t sz = kSizes[i & 3];
-        uint64_t off = box_alloc(meta, sz);
+        uint64_t off = sbo_alloc(meta, sz);
         if (off == (uint64_t)-1) continue;
-        box_free(meta, off);
+        sbo_free(meta, off);
         ops++;
     }
     total_ops += ops;
@@ -35,7 +35,7 @@ int main(int argc, char **argv) {
 
     meta = malloc(META_SIZE); data = malloc(DATA_SIZE);
     memset(meta, 0, META_SIZE);
-    if (box_init(meta, META_SIZE, DATA_SIZE) != 0) { printf("init failed\n"); return 1; }
+    if (sbo_init(meta, META_SIZE, DATA_SIZE) != 0) { printf("init failed\n"); return 1; }
 
     struct timespec t0, t1;
     clock_gettime(CLOCK_MONOTONIC, &t0);

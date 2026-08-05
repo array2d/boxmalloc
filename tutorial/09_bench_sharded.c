@@ -5,7 +5,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <time.h>
-#include <slotsboxmalloc/slotsboxmalloc.h>
+#include <slotsboxmalloc/slotsboxobj.h>
 
 #define OPS_PER_THREAD 50000
 #define META_SIZE (256 * 1024)
@@ -21,9 +21,9 @@ void* bench_thread(void *arg) {
     long ops = 0;
     for (int i = 0; i < OPS_PER_THREAD; i++) {
         size_t sz = kSizes[i & 3];
-        uint64_t off = box_alloc(inst->meta, sz);
+        uint64_t off = sbo_alloc(inst->meta, sz);
         if (off == (uint64_t)-1) continue;
-        box_free(inst->meta, off);
+        sbo_free(inst->meta, off);
         ops++;
     }
     total_ops += ops;
@@ -40,7 +40,7 @@ int main(int argc, char **argv) {
         instances[i].meta = malloc(META_SIZE);
         instances[i].data = malloc(DATA_SIZE);
         memset(instances[i].meta, 0, META_SIZE);
-        box_init(instances[i].meta, META_SIZE, DATA_SIZE);
+        sbo_init(instances[i].meta, META_SIZE, DATA_SIZE);
     }
 
     struct timespec t0, t1;

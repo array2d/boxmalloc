@@ -5,11 +5,11 @@
 #include <string.h>
 #include <stdint.h>
 #include <time.h>
-#include <slotsboxmalloc/slotsboxmalloc.h>
+#include <slotsboxmalloc/slotsboxobj.h>
 
 #define OPS 200000
 #define META_SIZE (1024 * 1024)
-#define DATA_SIZE (15ULL * 8 * 1024 * 1024)
+#define DATA_SIZE (8ULL * 64 * 64 * 64 * 64)
 
 // Private allocator: each thread does alloc+free entirely within its home slot
 // by directly calling box_alloc with slot-distinctive sizes that hash to
@@ -27,8 +27,8 @@ void* worker(void *arg) {
     long n = 0;
     for (int i = 0; i < OPS; i++) {
         size_t sz = kSz[i & 3];
-        uint64_t off = box_alloc(meta, sz);
-        if (off != (uint64_t)-1) { box_free(meta, off); n++; }
+        uint64_t off = sbo_alloc(meta, sz);
+        if (off != (uint64_t)-1) { sbo_free(meta, off); n++; }
     }
     total += n; return NULL;
 }
@@ -37,7 +37,7 @@ int main(int argc, char **argv) {
     int n = (argc > 1) ? atoi(argv[1]) : 8;
     uint8_t *mem = malloc(META_SIZE + DATA_SIZE);
     memset(mem, 0, META_SIZE);
-    if (box_init(mem, META_SIZE, DATA_SIZE) != 0) { printf("init fail\n"); return 1; }
+    if (sbo_init(mem, META_SIZE, DATA_SIZE) != 0) { printf("init fail\n"); return 1; }
 
     struct timespec t0, t1;
     pthread_t *tids = malloc(n * sizeof(pthread_t));

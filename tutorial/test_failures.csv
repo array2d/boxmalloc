@@ -1,1 +1,4 @@
 case,run,exit,time,stdout
+14_bench_alloc_only,14_bench_alloc_only [2/3],timeout,60.000,
+14_bench_alloc_only,14_bench_alloc_only [3/3],timeout,60.000,
+14_bench_alloc_only,14_bench_alloc_only [1/3],timeout,60.000,

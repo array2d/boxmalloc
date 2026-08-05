@@ -3,7 +3,7 @@
 #include <time.h>
 #include <stdint.h>
 
-#include <slotsboxmalloc/slotsboxmalloc.h>
+#include <slotsboxmalloc/slotsboxobj.h>
 
 #define SMALL_OBJ_SIZE 8  // 小对象大小 <=8byte
 
@@ -17,7 +17,7 @@ int main() {
     }
 
     // 初始化 slotsboxmalloc
-    if (box_init(buddy, 4 * 1024 * 1024, 64 * 1024 * 1024) != 0) {
+    if (sbo_init(buddy, 4 * 1024 * 1024, 64 * 1024 * 1024) != 0) {
         printf("Failed to initialize slotsboxmalloc\n");
         free(buddy);
         free(data);
@@ -37,7 +37,7 @@ int main() {
 
     int alloc_count = 0;
     while (1) {
-        uint64_t obj_offset = box_alloc(buddy,  SMALL_OBJ_SIZE);
+        uint64_t obj_offset = sbo_alloc(buddy,  SMALL_OBJ_SIZE);
         if (obj_offset == (uint64_t)-1) {
             break;  // 分配失败，box已满
         }
@@ -58,22 +58,23 @@ int main() {
     printf("Allocated %d small objects\n", alloc_count);
 
     // 第二阶段：无限循环随机free和malloc
-    printf("Phase 2: Starting infinite random free/malloc loop...\n");
+    printf("Phase 2: Starting random free/malloc loop (2s limit)...\n");
     srand(time(NULL));  // 初始化随机种子
     long long loop_count = 0;
     clock_t start = clock();
 
     while (1) {
+        if (loop_count > 0 && (loop_count % 5000 == 0) && (double)(clock() - start) / CLOCKS_PER_SEC > 2.0) break;
         // 随机选择一个已分配的对象
         int random_index = rand() % alloc_count;
         void *ptr_to_free = ptrs[random_index];
 
         // Free 随机对象
         uint64_t offset = (uint8_t *)ptr_to_free - data;
-        box_free(buddy, offset);
+        sbo_free(buddy, offset);
 
         // 立即 Malloc 一个新的小对象
-        uint64_t new_offset = box_alloc(buddy, SMALL_OBJ_SIZE);
+        uint64_t new_offset = sbo_alloc(buddy, SMALL_OBJ_SIZE);
         if (new_offset == (uint64_t)-1) {
             printf("Re-allocation failed at loop %lld\n", loop_count);
             break;  // 如果分配失败，退出循环
@@ -96,7 +97,7 @@ int main() {
     // 清理
     for (int i = 0; i < alloc_count; i++) {
         uint64_t offset= (uint8_t *)ptrs[i] - data;
-        box_free(buddy, offset);
+        sbo_free(buddy, offset);
     }
     free(ptrs);
     free(buddy);
