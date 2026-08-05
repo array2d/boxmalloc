@@ -9,11 +9,7 @@ slotsboxmalloc 是基于 16 叉伙伴系统（16-ary buddy system）的存储分
 ## 构建
 
 ```bash
-./build.sh              # Release
-./build_debug.sh        # Debug（启用 ENABLE_LOG 宏，输出 LOG 日志）
-./build_asan.sh         # AddressSanitizer（内存越界、use-after-free）
-./build_tsan.sh         # ThreadSanitizer（数据竞争检测）
-./build_ubsan.sh        # UndefinedBehaviorSanitizer（整数溢出、位域越界等）
+make
 ```
 
 **注意**：slotsboxmalloc 依赖 blockmalloc 共享库。需要先 `sudo make install` blockmalloc，或设置 `LD_LIBRARY_PATH`。运行时确保 `libblockmalloc.so.1` 在链接路径中。
@@ -27,7 +23,6 @@ python3 tutorial/test.py --filter 04          # 按名称过滤
 python3 tutorial/test.py --repeat 10          # 每 case 重复 N 轮
 python3 tutorial/test.py --skip-stress        # 跳过 03_stress（有无界循环）
 python3 tutorial/test.py --jobs 1             # 单线程串行（调试时用）
-python3 tutorial/test.py --no-build           # 跳过编译
 python3 tutorial/test.py --errorexit          # 遇错即停
 
 # 直接运行单个 case
