@@ -1,6 +1,0 @@
-usr/include/boxmalloc/*
-
-usr/lib/x86_64-linux-gnu/libboxmalloc.so
-usr/lib/*/libboxmalloc.so
-usr/lib/x86_64-linux-gnu/cmake/boxmalloc-*/*
-usr/lib/*/cmake/boxmalloc-*/*

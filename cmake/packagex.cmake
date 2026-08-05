@@ -3,8 +3,8 @@
 # PROJECT_VERSION and GNUInstallDirs variables are already defined.
 
 # install library and export targets
-install(TARGETS boxmalloc
-    EXPORT boxmallocTargets
+install(TARGETS slotsboxmalloc
+    EXPORT slotsboxmallocTargets
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
@@ -14,23 +14,23 @@ install(DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/../include/ DESTINATION ${CMAKE_INST
 # Export targets and generate CMake config package
 include(CMakePackageConfigHelpers)
 write_basic_package_version_file(
-    "${CMAKE_CURRENT_BINARY_DIR}/boxmallocConfigVersion.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/slotsboxmallocConfigVersion.cmake"
     VERSION ${PROJECT_VERSION}
     COMPATIBILITY AnyNewerVersion
 )
 
 configure_file(
-    "${CMAKE_CURRENT_LIST_DIR}/BoxmallocConfig.cmake.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/boxmallocConfig.cmake"
+    "${CMAKE_CURRENT_LIST_DIR}/SlotsboxmallocConfig.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/slotsboxmallocConfig.cmake"
     @ONLY
 )
 
-install(EXPORT boxmallocTargets
-    FILE boxmallocTargets.cmake
-    NAMESPACE boxmalloc::
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/boxmalloc-${PROJECT_VERSION}
+install(EXPORT slotsboxmallocTargets
+    FILE slotsboxmallocTargets.cmake
+    NAMESPACE slotsboxmalloc::
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/slotsboxmalloc-${PROJECT_VERSION}
 )
 
-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/boxmallocConfig.cmake"
-              "${CMAKE_CURRENT_BINARY_DIR}/boxmallocConfigVersion.cmake"
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/boxmalloc-${PROJECT_VERSION})
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/slotsboxmallocConfig.cmake"
+              "${CMAKE_CURRENT_BINARY_DIR}/slotsboxmallocConfigVersion.cmake"
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/slotsboxmalloc-${PROJECT_VERSION})

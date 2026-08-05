@@ -1,12 +1,12 @@
-Source: boxmalloc
+Source: slotsboxmalloc
 Section: libs
 Priority: optional
 Maintainer: miaobyte <peng.li24@nio.com>
 Build-Depends: debhelper (>= 12), cmake, build-essential,libblockmalloc1-dev
 Standards-Version: 4.5.0
-Homepage: https://github.com/miaobyte/boxmalloc
+Homepage: https://github.com/miaobyte/slotsboxmalloc
 
-Package: libboxmalloc1
+Package: libslotsboxmalloc1
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends},libblockmalloc1
 Description: 16-way buddy-style fixed-block allocator library
@@ -14,9 +14,9 @@ Description: 16-way buddy-style fixed-block allocator library
  allocating fixed/aligned objects. The runtime package contains the
  shared library(s) needed by programs.
 
-Package: libboxmalloc1-dev
+Package: libslotsboxmalloc1-dev
 Section: libdevel
 Architecture: any
-Depends: libboxmalloc1 (= ${binary:Version}), libblockmalloc1-dev, ${misc:Depends}
-Description: development files for libboxmalloc1
- Header files and pkg-config metadata for developing against libboxmalloc1.
+Depends: libslotsboxmalloc1 (= ${binary:Version}), libblockmalloc1-dev, ${misc:Depends}
+Description: development files for libslotsboxmalloc1
+ Header files and pkg-config metadata for developing against libslotsboxmalloc1.

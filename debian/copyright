@@ -1,5 +1,5 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
-Upstream-Name: boxmalloc
+Upstream-Name: slotsboxmalloc
 
 Files: *
 Copyright: 2025 Miaobyte
