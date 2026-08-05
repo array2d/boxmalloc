@@ -1,80 +1,114 @@
 /*
-boxmalloc 是一个基于伙伴系统（buddy system）的存储分配器，用于高效管理任意size的obj。
-它接收两块独立的完整内存：meta区（存储管理box系统的元数据）和obj区（存放实际obj数据），初始化后不再支持扩展2个区域的大小。
+boxmalloc — 16-ary buddy allocator for shared-memory (SHM) / RDMA workloads.
 
-box可以看作16叉树，obj可以占据连续的几个树子节点，一旦被obj占据，则不能再分割子树。
+设计灵感来自于现实世界的包装箱系统：大包装箱（外箱）可嵌套小包装箱（内箱），
+形成多层结构。物品按其体积大小选择合适的包装箱存放。
 
-boxmalloc的设计灵感来自于现实世界的包装箱系统
-大包装箱（外箱）可嵌套小包装箱（内箱），形成多层结构。
-物品需要按其体积大小选择合适的包装箱进行存放。
-
-boxmalloc的设计目标，不仅仅是作为程序的内存分配器，还希望能成为oskernel、block设备的存储分配器，提供高效的obj分配和释放功能。
-同时，boxmalloc是一个被动的obj分配器，需要被外部调用，不会主动整理和移动对象。
-
-关于meta区：
-meta区依赖blockmalloc(https://github.com/miaobyte/blockmalloc)。
-meta区的大小=sizeof(box_meta_t)+boxcount*sizeof(box_head_t)
-meta区的大小约束了box的node数量，进而约束了obj的数量，需要根据实际需求进行合理配置
-
-关于obj区：
-obj区不会存放任何box系统的元数据（如对象地址、对象数据长度，这些会在meta区找到），完全分配给obj使用，但是obj实际分配会对齐到alloced_size=X*(16^N)*8字节,X∈[1,15],N>=0
-obj区通常可以达到非常高的利用率，在任何分配状态下，如果再malloc足够多的小obj，利用率可以达到100%。
-但相应的，如果小obj过多，会导致meta区也很大。
-
-关于obj分配：
-最小分配单元为8字节，按16的幂次方进行对齐，支持动态分配和释放对象
-boxmalloc并不对obj的size进行优化适配，各种size的obj均可分配。
-16叉树的设计，相比其它伙伴系统的2叉
-
-16叉深度更低，但是在每个深度，可能都需要遍历1-16个子节点。
-二叉深度更深，但是每个深度只需要遍历1-2个子节点。
-举例：
-以16*16byte malloc 8byte为例子
-16叉深度为1，时间复杂度为O(1~16)
-而二叉深度为4，时间复杂度固定为O(4~8)
-
-以(16^8)*8=32G为例子
-box深度为8，时间复杂度为O(8*(1~16）)=O(8~128)
-二叉树深度为32，时间复杂度为O(32*(1~2))=O(32~64)
-
-关于obj释放：
-释放obj时，boxmalloc会检查所在node slots的状态，发现node的slots全部空闲，则释放该node，并递归检查和释放其parent node，直到root node
-*/
+设计目标：OS kernel、block 设备的存储分配器，也适用于 SHM 多进程 / RDMA 场景。
+被动分配，不主动整理/移动对象。
 
 
-/*
-内存布局示意图：
+=== 16 叉伙伴树模型 ===
 
-meta区：
-+-------------------+  box_meta_t 描述整个伙伴系统
-|   +-------------+ |
-|   | buddysize    | |  伙伴系统的总大小
-|   | box_size     | |  box区的总大小
-|   | blocks_meta_t| |  blocks的元数据
-|   +-------------+ |  blocks区，存储 block_t 和 box_head_t
-|   | block_t0    | |  每个 block 的元数据
-|   | box_head_t[0] | |  描述第0个 box 的状态和结构
-|   +-------------+ |
-|   | block_t1    | |  每个 block 的元数据
-|   | box_head_t[1] | |  描述第1个 box 的状态和结构
-|   +-------------+ |
-|   | block_t2    | |  每个 block 的元数据
-|   | box_head_t[2] | |  描述第2个 box 的状态和结构
-|   | ...         | |
-|   +-------------+ |
-+-------------------+  <-- meta区结束，box区开始
+将 data 区视为一棵 16 叉树。最小分配单元 8 字节，按 16 的幂对齐：
 
-box区：
-+-------------------+  <-- 起始地址 (box_root)
-|   box 数据区      |  存储实际分配的对象，不包含任何 meta 信息
-|                   |
-|                   |
-+-------------------+  <-- box区结束
+  16^0 × 8 = 8B      1 个 slot
+  16^1 × 8 = 128B    16 个 slot
+  16^2 × 8 = 2KB     256 个 slot
+  ...
+  16^k × m × 8        其中 k ≥ 0，m ∈ [1, 15]
 
-说明：
-1. meta区和 box区 地址互相独立。
-2. meta区存储 box_meta_t 和 blocks 的元数据，用于管理 box 的分配。
-3. box区是实际分配的内存区域，不存储任何元数据。
+alloc(N) → align_to((N+7)/8) → (level, multiple)，分配连续 multiple 个 slot。
+
+16 叉 vs 二叉对比：
+- 16叉深度更低，但每层遍历 1-16 个子节点。以 32GB (level=8) 为例，
+  复杂度 O(8 × (1~16)) = O(8~128)。
+- 二叉深度更深，但每层只需遍历 1-2 个子节点，复杂度 O(32 × (1~2)) = O(32~64)。
+
+16 = 2^4，所有运算化为位操作：offset → slot_index = (unit_offset >> (level×4)) & 0xF。
+
+
+=== 内存布局 ===
+
+两块独立区域，地址互不依赖：
+
+  meta 区（连续，调用者分配并传入 metaptr）:
+  ┌──────────────────────────────────────┐
+  │ box_meta_t                            │
+  │   magic[16] = "boxmalloc"            │
+  │   slot_block[0..root_slots-1]         │  ← 每 slot 独立 blockmalloc 池
+  │   slot_locks[0..root_slots-1]         │  ← 每 slot 一个 spinlock
+  │   slot_bytes / per_slot_meta / ...    │
+  ├──────────────────────────────────────┤
+  │ slot 0 的 box_head_t 池               │  ← 树节点，blockmalloc 管理
+  │ slot 1 的 box_head_t 池               │
+  │ ...                                   │
+  └──────────────────────────────────────┘
+
+  data 区（独立，调用者自行管理）:
+  ┌──────────────────────────────────────┐
+  │ slot 0 的纯数据区                     │  ← slot_bytes 字节
+  │ slot 1 的纯数据区                     │
+  │ ...                                   │
+  └──────────────────────────────────────┘
+
+- boxmalloc 不持有 data 区指针。box_alloc 返回 data 区内的字节偏移量，
+  调用者自行 data + offset 读写。
+- 偏移量是整数，可跨进程传递（RDMA remote key 计算）。
+- data 区不含任何元数据，meta 区依赖 blockmalloc 管理 box_head_t 节点。
+
+
+=== Slot 状态机 ===
+
+  BOX_UNUSED (0) ──alloc obj──→ OBJ_START (2) + OBJ_CONTINUED (3)...
+  BOX_UNUSED (0) ──create child─→ BOX_FORMATTED (1)
+
+
+=== 并发模型 ===
+
+Root slot 分区锁：data 区分成 root_slots 个 slot（1-16），每 slot 一把 spinlock +
+独立 blockmalloc 池。物理隔离，消除跨槽缓存弹跳。
+
+- box_alloc：trylock 遍历 slot，获取锁失败则尝试下一个 slot。
+- box_free：根据 offset 确定 slot → lock 等待。
+- 多进程 (fork + mmap MAP_SHARED)：零进程私有变量/指针，开箱即用。
+
+
+=== obj_usage：size 内部编码 ===
+
+  typedef struct {
+      uint8_t level : 4;     // 0-15
+      uint8_t multiple : 4;  // 1-15 连续 slot 数；0 = 无可用空间（哨兵）
+  } obj_usage;
+
+obj_offset(u) = 8 × 16^level × multiple = multiple << (level×4 + 3)
+
+
+=== 约束与限制 ===
+
+- box_bytessize 必须 = 16^k × m × 8（k≥0, m∈[1,15]），否则 box_init 失败。
+- 每次分配向上对齐到 16^k × m × 8。内部碎片最坏约 8×（申请 1B → 8B），
+  大对象趋近 2×（如申请 16^k×8+1 字节时 multiple 进位到 2）。
+- 无碎片整理：长期运行可能产生外部碎片。
+- meta 区大小 = sizeof(box_meta_t) + root_slots × per_slot_meta。
+  小对象过多时 meta 区开销显著。
+
+
+=== 典型用法（SHM 多进程）===
+
+  // 进程 A（初始化）
+  uint8_t *meta = mmap(NULL, META_SZ, PROT_READ|PROT_WRITE,
+                       MAP_SHARED|MAP_ANONYMOUS, -1, 0);
+  uint8_t *data = mmap(NULL, DATA_SZ, PROT_READ|PROT_WRITE,
+                       MAP_SHARED|MAP_ANONYMOUS, -1, 0);
+  box_init(meta, META_SZ, DATA_SZ);
+  uint64_t off = box_alloc(meta, 1024);
+  *(uint64_t*)(data + off) = 42;
+  // 将 off 通过 IPC 发给进程 B
+
+  // 进程 B（同一共享内存映射）
+  uint64_t val = *(uint64_t*)(data + off);
+  box_free(meta, off);
 */
 
 #ifndef BOX_MALLOC_H
@@ -83,9 +117,24 @@ box区：
 #include <stddef.h>
 #include <stdint.h>
 
-int box_init(void *metaptr,  const size_t boxhead_bytessize, const size_t box_bytessize);
-uint64_t box_alloc(void *metaptr,const size_t size);
+// box_init: 初始化分配器。
+// metaptr 为 meta 区起始地址（调用者分配并清零）。
+// boxhead_bytessize: meta 区总字节数。
+// box_bytessize: data 区总字节数，必须 = 16^k × m × 8。
+// 返回 0 成功，-1 失败。
+int box_init(void *metaptr, const size_t boxhead_bytessize, const size_t box_bytessize);
+
+// box_alloc: 分配 size 字节对象，返回 data 区内字节偏移。
+// 失败返回 (uint64_t)-1。
+// 线程安全：slot 分区锁，多线程/多进程并发安全。
+uint64_t box_alloc(void *metaptr, const size_t size);
+
+// box_allocated_size: 查询已分配对象的实际占用字节数（向上对齐到 16 幂）。
+// 线程安全。
 uint64_t box_allocated_size(void *metaptr, const uint64_t obj_offset);
+
+// box_free: 释放对象。obj_offset 为 box_alloc 返回的偏移。
+// 线程安全。
 void box_free(void *metaptr, const uint64_t obj_offset);
 
 #endif // BOX_MALLOC_H
