@@ -14,7 +14,7 @@ typedef struct {
 
 typedef struct
 {
-    #define BOX_MAGIC "boxmalloc"
+    #define BOX_MAGIC "slotsboxmalloc"
     uint8_t magic[16];
     uint64_t boxhead_bytessize;
     uint64_t box_bytessize;

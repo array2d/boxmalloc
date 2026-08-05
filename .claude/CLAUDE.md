@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 项目定位
 
-boxmalloc 是基于 16 叉伙伴系统（16-ary buddy system）的存储分配器。不是通用 malloc 替代，设计目标覆盖 OS kernel 和 block 设备的存储分配场景。依赖 blockmalloc 管理 meta 区的 box_head_t 节点。
+slotsboxmalloc 是基于 16 叉伙伴系统（16-ary buddy system）的存储分配器。不是通用 malloc 替代，设计目标覆盖 OS kernel 和 block 设备的存储分配场景。依赖 blockmalloc 管理 meta 区的 box_head_t 节点。
 
 ## 构建
 
@@ -16,7 +16,7 @@ boxmalloc 是基于 16 叉伙伴系统（16-ary buddy system）的存储分配�
 ./build_ubsan.sh        # UndefinedBehaviorSanitizer（整数溢出、位域越界等）
 ```
 
-**注意**：boxmalloc 依赖 blockmalloc 共享库。需要先 `sudo make install` blockmalloc，或设置 `LD_LIBRARY_PATH`。运行时确保 `libblockmalloc.so.1` 在链接路径中。
+**注意**：slotsboxmalloc 依赖 blockmalloc 共享库。需要先 `sudo make install` blockmalloc，或设置 `LD_LIBRARY_PATH`。运行时确保 `libblockmalloc.so.1` 在链接路径中。
 
 ## 测试
 
@@ -45,7 +45,7 @@ tutorial case 清单：
 | `01_basic` | 基础 init/alloc/free |
 | `02_bench` | 111 次不同大小 alloc/write/read/free |
 | `03_stress` | 分配至满，然后无限随机 free/alloc 循环 |
-| `04_multithread` | 多线程并发 alloc/free（**当前 FAIL：boxmalloc 无锁**）|
+| `04_multithread` | 多线程并发 alloc/free（**当前 FAIL：slotsboxmalloc 无锁**）|
 | `05_multiprocess` | 多进程并发，共享内存 mmap（间歇 FAIL）|
 | `06_multiprocess_multithread` | 多进程 × 多线程（间歇 FAIL）|
 
@@ -68,7 +68,7 @@ TSAN_OPTIONS="suppressions=tsan_suppress.txt history_size=7" ./tutorial/04_multi
 
 ### 16 叉伙伴树模型
 
-boxmalloc 将数据区视为一棵 16 叉树。最小分配单元 = 8 字节，按 16 的幂对齐：
+slotsboxmalloc 将数据区视为一棵 16 叉树。最小分配单元 = 8 字节，按 16 的幂对齐：
 
 ```
 16^0 * 8 = 8B     一个 slot
@@ -100,7 +100,7 @@ meta 区（连续）:                       data 区（独立）:
 
 - `metaptr` 指向 meta 区开头（即 `&box_meta_t`）
 - `boxhead = metaptr + sizeof(box_meta_t)` 是 blockmalloc 管理的 block 区域
-- data 区的地址 boxmalloc 不持有——调用者自行管理，box_alloc 返回的是 data 区内的**字节偏移量**
+- data 区的地址 slotsboxmalloc 不持有——调用者自行管理，box_alloc 返回的是 data 区内的**字节偏移量**
 
 ### obj_usage：size 的内部编码
 

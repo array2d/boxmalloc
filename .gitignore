@@ -10,8 +10,8 @@ obj-x86_64*
 debian/.debhelper
 debian/tmp/
 debian/deb*
-debian/libboxmalloc1
-debian/libboxmalloc1-dev
+debian/libslotsboxmalloc1
+debian/libslotsboxmalloc1-dev
 *.log
 *.substvars
 debian/files*
