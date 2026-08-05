@@ -1,5 +1,5 @@
 /*
-boxmalloc: 16-ary buddy allocator for shared-memory concurrent workloads.
+slotsboxmalloc: 16-ary buddy allocator for shared-memory concurrent workloads.
 
 设计目标：OS kernel、block 设备存储分配器。被动分配，不主动整理/移动对象。
 内存模型：meta 区（box_head_t 树，blockmalloc 管理）+ data 区（纯 obj 数据，无元信息）。
@@ -9,8 +9,8 @@ SHM 兼容：零进程私有变量/指针，fork+mmap MAP_SHARED 开箱即用。
 最小分配单元 8B，16 幂对齐：alloc(N) → 16^k × m × 8, k≥0, m∈[1,15]。
 */
 
-#ifndef BOX_MALLOC_H
-#define BOX_MALLOC_H
+#ifndef SLOTSBOX_MALLOC_H
+#define SLOTSBOX_MALLOC_H
 
 #include <stddef.h>
 #include <stdint.h>

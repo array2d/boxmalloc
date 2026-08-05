@@ -6,7 +6,7 @@
 
 #include <blockmalloc/blockmalloc.h>
 
-#include <boxmalloc/boxmalloc.h>
+#include <slotsboxmalloc/slotsboxmalloc.h>
 #include "obj_usage.h"
 #include "logutil.h"
 #include "lock.h"
