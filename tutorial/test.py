@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""boxmalloc tutorial test — run case binaries, measure time and exit code."""
+"""slotsboxmalloc tutorial test — run case binaries, measure time and exit code."""
 
 from __future__ import annotations
 import argparse, csv, os, subprocess, sys, time
@@ -53,7 +53,7 @@ def _run_one(case: Path, label: str, timeout: int) -> dict:
 
 
 def main():
-    ap = argparse.ArgumentParser(description="boxmalloc tutorial test")
+    ap = argparse.ArgumentParser(description="slotsboxmalloc tutorial test")
     ap.add_argument("--filter", default="", help="filter by case name")
     ap.add_argument("--no-build", action="store_true", help="skip cmake + make")
     ap.add_argument("--errorexit", action="store_true", help="exit on first error")

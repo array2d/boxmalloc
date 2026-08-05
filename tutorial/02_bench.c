@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <stdint.h>
-#include <boxmalloc/boxmalloc.h>
+#include <slotsboxmalloc/slotsboxmalloc.h>
 
 #define LOOPS 10000
 

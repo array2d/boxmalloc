@@ -5,7 +5,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <time.h>
-#include <boxmalloc/boxmalloc.h>
+#include <slotsboxmalloc/slotsboxmalloc.h>
 
 // 8*16^1*15 = 1920 bytes → root level=1, avliable_slot=15, depth=2
 // Minimal 2-level tree for maximum cache locality

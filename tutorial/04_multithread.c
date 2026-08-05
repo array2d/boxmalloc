@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
-#include <boxmalloc/boxmalloc.h>
+#include <slotsboxmalloc/slotsboxmalloc.h>
 
 #define NUM_THREADS 8
 #define OPS_PER_THREAD 500       // each op is alloc-or-free

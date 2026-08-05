@@ -3,22 +3,22 @@
 #include <time.h>
 #include <stdint.h>
 
-#include <boxmalloc/boxmalloc.h>
+#include <slotsboxmalloc/slotsboxmalloc.h>
 
 #define SMALL_OBJ_SIZE 8  // 小对象大小 <=8byte
 
 int main() {
-    // 初始化 boxmalloc 的元数据和数据区，使用更大的内存池以支持高负载
+    // 初始化 slotsboxmalloc 的元数据和数据区，使用更大的内存池以支持高负载
     uint8_t *buddy = malloc(4 * 1024 * 1024);     // 元数据区，增大到4MB
     uint8_t *data = malloc(64 * 1024 * 1024);     // 数据区，增大到64MB
     if (!buddy || !data) {
-        perror("Failed to allocate memory for boxmalloc");
+        perror("Failed to allocate memory for slotsboxmalloc");
         return 1;
     }
 
-    // 初始化 boxmalloc
+    // 初始化 slotsboxmalloc
     if (box_init(buddy, 4 * 1024 * 1024, 64 * 1024 * 1024) != 0) {
-        printf("Failed to initialize boxmalloc\n");
+        printf("Failed to initialize slotsboxmalloc\n");
         free(buddy);
         free(data);
         return 1;

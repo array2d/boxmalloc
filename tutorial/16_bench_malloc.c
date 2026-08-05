@@ -5,7 +5,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <time.h>
-#include <boxmalloc/boxmalloc.h>
+#include <slotsboxmalloc/slotsboxmalloc.h>
 
 #define OPS 200000
 #define META_SIZE (1024 * 1024)
@@ -61,7 +61,7 @@ int main() {
     printf("-------------- ------ -------- -------- ------------\n");
     for (int n = 1; n <= 8; n++) {
         run("glibc-malloc", bench_malloc, NULL, n);
-        run("boxmalloc",    bench_box,    mem,  n);
+        run("slotsboxmalloc",    bench_box,    mem,  n);
     }
     free(mem);
     return 0;

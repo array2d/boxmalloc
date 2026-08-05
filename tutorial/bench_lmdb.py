@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""LMDB vs boxmalloc throughput benchmark."""
+"""LMDB vs slotsboxmalloc throughput benchmark."""
 import lmdb, os, time, tempfile
 
 N_OPS = 100_000
@@ -48,8 +48,8 @@ def bench():
 if __name__ == '__main__':
     bench()
     print()
-    print("=== boxmalloc (C, pure alloc+free, single-thread) ===")
-    print("boxmalloc 64B alloc+free:                ~4,000,000 ops/s")
+    print("=== slotsboxmalloc (C, pure alloc+free, single-thread) ===")
+    print("slotsboxmalloc 64B alloc+free:                ~4,000,000 ops/s")
     print()
     print("LMDB is a persistent, transactional KV store with full ACID.")
-    print("boxmalloc is an in-memory block allocator with no persistence.")
+    print("slotsboxmalloc is an in-memory block allocator with no persistence.")

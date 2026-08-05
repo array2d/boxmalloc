@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <boxmalloc/boxmalloc.h>
+#include <slotsboxmalloc/slotsboxmalloc.h>
 
 #define META_SIZE (4 * 1024 * 1024)
 #define DATA_SIZE (15ULL * 8 * 1024 * 1024)
